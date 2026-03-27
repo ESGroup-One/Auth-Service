@@ -56,25 +56,24 @@ public class AuthService {
 
             user.setVerified(true);
             user.setOtp(null);
+            user.setRole(User.Role.student);
             userRepository.save(user);
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid OTP");
         }
     }
 
-    public String login(String indexNumber, String password) {
-        // 1. Find user in the local 'users' collection
+    public User login(String indexNumber, String password) {
         User user = userRepository.findByIndexNumber(indexNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials"));
 
-        // 2. Check if user is verified
         if (!user.isVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please complete registration first");
         }
 
-        // 3. Verify hashed password
         if (passwordEncoder.matches(password, user.getPassword())) {
-            return jwtUtil.generateToken(indexNumber);
+            // We'll return the user object; the controller will wrap it with the token
+            return user;
         } else {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
         }
