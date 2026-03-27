@@ -4,17 +4,31 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Data
 @Document(collection = "users")
 public class User {
+
+    @JsonIgnore
+    private String password;
+
+    @JsonIgnore
+    private String otp;
+
     @Id
     private String id;
     private String indexNumber;
     private String cid;
     private String fullName;
     private String email;
-    private Object academicMarks; 
-    private String password;
-    private String otp;
+    private Object academicMarks;
     private boolean isVerified = false;
+    private Role role;
+
+    public enum Role {
+        student,
+        admin,
+        superadmin
+    }
 }
