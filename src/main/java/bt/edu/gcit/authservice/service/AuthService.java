@@ -63,16 +63,31 @@ public class AuthService {
         }
     }
 
-    public User login(String indexNumber, String password) {
-        User user = userRepository.findByIndexNumber(indexNumber)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials"));
+    public String registerSuperAdmin(String email, String password) {
+        // // Check if a user with this email already exists
+        // if (userRepository.findByEmail(email).isPresent()) {
+        // throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this email
+        // already exists");
+        // }
 
+        User admin = new User();
+        admin.setEmail(email);
+        admin.setPassword(passwordEncoder.encode(password));
+        admin.setRole(User.Role.superadmin);
+        admin.setVerified(true);
+
+        userRepository.save(admin);
+        return "SuperAdmin registered successfully";
+    }
+
+    public User login(String identifier, String password) {
+        User user = userRepository.findByIndexNumber(identifier)
+                .orElseGet(() -> userRepository.findByEmail(identifier)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")));
         if (!user.isVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please complete registration first");
         }
-
         if (passwordEncoder.matches(password, user.getPassword())) {
-            // We'll return the user object; the controller will wrap it with the token
             return user;
         } else {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");

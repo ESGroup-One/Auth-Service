@@ -39,6 +39,18 @@ public class AuthController {
         return ResponseEntity.ok("Student registration successful.");
     }
 
+    @PostMapping("/register/superadmin")
+    public ResponseEntity<String> registerSuperAdmin(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String password = request.get("password");
+
+        if (email == null || password == null) {
+            return ResponseEntity.badRequest().body("Email and Password are required");
+        }
+
+        return ResponseEntity.ok(authService.registerSuperAdmin(email, password));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         User user = authService.login(request.getIndexNumber(), request.getPassword());
