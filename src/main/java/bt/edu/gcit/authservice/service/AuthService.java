@@ -6,6 +6,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; // Work
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+import java.util.UUID;
+
 import bt.edu.gcit.authservice.dao.RegistryLookupRepository;
 import bt.edu.gcit.authservice.dao.UserRepository;
 import bt.edu.gcit.authservice.dto.StudentRegistryDTO;
@@ -64,11 +67,9 @@ public class AuthService {
     }
 
     public String registerSuperAdmin(String email, String password) {
-        // // Check if a user with this email already exists
-        // if (userRepository.findByEmail(email).isPresent()) {
-        // throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this email
-        // already exists");
-        // }
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists");
+        }
 
         User admin = new User();
         admin.setEmail(email);
@@ -80,10 +81,53 @@ public class AuthService {
         return "SuperAdmin registered successfully";
     }
 
+    public String registerAdminBySuperAdmin(Map<String, String> details) {
+        if (userRepository.findByEmail(details.get("email")).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+
+        User admin = new User();
+        admin.setFullName(details.get("fullName"));
+        admin.setEmail(details.get("email"));
+        admin.setCollegeName(details.get("collegeName"));
+        admin.setWebsiteUrl(details.get("websiteUrl"));
+        admin.setContactInfo(details.get("contactInfo"));
+        admin.setRole(User.Role.admin);
+        admin.setVerified(false); // Verified only after setting password
+
+        // Generate a unique token for the set-password link
+        String token = UUID.randomUUID().toString();
+        admin.setPasswordToken(token);
+
+        userRepository.save(admin);
+
+        String setupLink = "http://localhost:3000/set-password?token=" + token;
+        emailService.sendAdminSetupEmail(admin.getEmail(), setupLink);
+
+        return "Admin invited successfully";
+    }
+
+    public void setAdminPassword(String token, String newPassword) {
+        // Find user by the temporary token
+        User user = userRepository.findByPasswordToken(token)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid or expired token"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordToken(null); // Clear token so it can't be used again
+        user.setVerified(true);
+        userRepository.save(user);
+    }
+
     public User login(String identifier, String password) {
-        User user = userRepository.findByIndexNumber(identifier)
-                .orElseGet(() -> userRepository.findByEmail(identifier)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")));
+        User user;
+
+        if (identifier.contains("@")) {
+            user = userRepository.findByEmail(identifier)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        } else {
+            user = userRepository.findByIndexNumber(identifier)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        }
         if (!user.isVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please complete registration first");
         }

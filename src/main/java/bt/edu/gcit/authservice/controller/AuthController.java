@@ -51,6 +51,24 @@ public class AuthController {
         return ResponseEntity.ok(authService.registerSuperAdmin(email, password));
     }
 
+    @PostMapping("/register/admin")
+    public ResponseEntity<String> registerAdmin(@RequestBody Map<String, String> request) {
+        return ResponseEntity.ok(authService.registerAdminBySuperAdmin(request));
+    }
+
+    @PostMapping("/register/set-password")
+    public ResponseEntity<String> setPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String password = request.get("password");
+
+        if (token == null || password == null) {
+            return ResponseEntity.badRequest().body("Token and Password are required");
+        }
+
+        authService.setAdminPassword(token, password);
+        return ResponseEntity.ok("Password set successfully. You can now login.");
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         User user = authService.login(request.getIndexNumber(), request.getPassword());
