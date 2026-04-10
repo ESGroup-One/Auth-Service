@@ -1,0 +1,12 @@
+ARG VARIANT=17-bullseye
+FROM mcr.microsoft.com/vscode/devcontainers/java:0-${VARIANT}
+
+# Install Maven
+ARG INSTALL_MAVEN="true"
+RUN if [ "${INSTALL_MAVEN}" = "true" ]; then \
+    su vscode -c "umask 0002 && . /usr/local/sdkman/bin/sdkman-init.sh && sdk install maven"; \
+    fi
+
+# Clean up broken repositories from reference and install basic tools
+RUN rm -f /etc/apt/sources.list.d/yarn.list \
+    && apt-get update && apt-get -y install curl iputils-ping apt-transport-https ca-certificates

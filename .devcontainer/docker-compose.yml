@@ -1,0 +1,45 @@
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nsps-workspace
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://12230028gcit_db_user:iIaMZbTcupB5kBOw@cluster0.eclmltd.mongodb.net/NSPS_DB?retryWrites=true&w=majority
+    ports:
+      - "8080:8080" # Auth Service Port
+      - "8082:8082" # Repository Service Port
+      - "8083:8083" # Placement Service Port
+      - "8084:8084" # Registry Service Port
+    command: sleep infinity
+
+  auth-service:
+    image: mcr.microsoft.com/vscode/devcontainers/java:17-bullseye
+    container_name: auth-service
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://12230028gcit_db_user:iIaMZbTcupB5kBOw@cluster0.eclmltd.mongodb.net/NSPS_DB?retryWrites=true&w=majority
+    # Note: Ports are handled by the workspace for development
+    command: sleep infinity
+
+  registry-service:
+    image: mcr.microsoft.com/vscode/devcontainers/java:17-bullseye
+    container_name: registry-service
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://12230028gcit_db_user:iIaMZbTcupB5kBOw@cluster0.eclmltd.mongodb.net/NSPS_DB?retryWrites=true&w=majority
+    command: sleep infinity
+
+  repository-service:
+    image: mcr.microsoft.com/vscode/devcontainers/java:17-bullseye
+    container_name: repository-service
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://12230028gcit_db_user:iIaMZbTcupB5kBOw@cluster0.eclmltd.mongodb.net/NSPS_DB?retryWrites=true&w=majority
+    command: sleep infinity
+
+  placement-service:
+    image: mcr.microsoft.com/vscode/devcontainers/java:17-bullseye
+    container_name: placement-service
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://12230028gcit_db_user:iIaMZbTcupB5kBOw@cluster0.eclmltd.mongodb.net/NSPS_DB?retryWrites=true&w=majority
+    command: sleep infinity

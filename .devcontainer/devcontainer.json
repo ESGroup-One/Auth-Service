@@ -1,0 +1,25 @@
+{
+  "name": "NSPS Microservices Workspace",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "mongodb.mongodb-vscode",
+        "humao.rest-client"
+      ]
+    }
+  },
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "postCreateCommand": "mkdir -p auth-service registry-service repository-service placement-service && echo 'Folders created successfully'"
+}
