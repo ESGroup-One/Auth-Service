@@ -17,4 +17,13 @@ public class EmailService {
         message.setText("Your OTP for registration is: " + otp);
         mailSender.send(message);
     }
+
+    public void sendAdminSetupEmail(String to, String setupLink) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Complete Your College Admin Registration");
+        message.setText(
+                "You have been added as a College Admin. Please click the link below to set your password and activate your account:\n\n" + setupLink);
+        mailSender.send(message);
+    }
 }

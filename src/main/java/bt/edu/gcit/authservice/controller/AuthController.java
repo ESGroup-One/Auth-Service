@@ -39,10 +39,43 @@ public class AuthController {
         return ResponseEntity.ok("Student registration successful.");
     }
 
+    @PostMapping("/register/superadmin")
+    public ResponseEntity<String> registerSuperAdmin(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String password = request.get("password");
+
+        if (email == null || password == null) {
+            return ResponseEntity.badRequest().body("Email and Password are required");
+        }
+
+        return ResponseEntity.ok(authService.registerSuperAdmin(email, password));
+    }
+
+    @PostMapping("/register/admin")
+    public ResponseEntity<String> registerAdmin(@RequestBody Map<String, String> request) {
+        return ResponseEntity.ok(authService.registerAdminBySuperAdmin(request));
+    }
+
+    @PostMapping("/register/set-password")
+    public ResponseEntity<String> setPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String password = request.get("password");
+
+        if (token == null || password == null) {
+            return ResponseEntity.badRequest().body("Token and Password are required");
+        }
+
+        authService.setAdminPassword(token, password);
+        return ResponseEntity.ok("Password set successfully. You can now login.");
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         User user = authService.login(request.getIndexNumber(), request.getPassword());
-        String token = jwtUtil.generateToken(user.getIndexNumber(), user.getRole().name());
+        String identifier = (user.getIndexNumber() != null) ? user.getIndexNumber() : user.getEmail();
+
+        String token = jwtUtil.generateToken(identifier, user.getRole().name());
+
         user.setPassword(null);
         user.setOtp(null);
         return ResponseEntity.ok(new AuthResponse(token, user));

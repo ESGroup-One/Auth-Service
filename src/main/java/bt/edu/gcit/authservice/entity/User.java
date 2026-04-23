@@ -26,6 +26,13 @@ public class User {
     private boolean isVerified = false;
     private Role role;
 
+    // for admin
+    private String collegeName;
+    private String websiteUrl;
+    private String contactInfo;
+
+    private String passwordToken;
+
     public enum Role {
         student,
         admin,
