@@ -8,7 +8,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 @Configuration
-// CHANGE THIS LINE to point to your auth-service dao package
 @EnableMongoRepositories(basePackages = "bt.edu.gcit.authservice.dao") 
 public class MongoConfig {
 
