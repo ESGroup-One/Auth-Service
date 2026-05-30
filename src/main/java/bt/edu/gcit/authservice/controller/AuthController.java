@@ -71,13 +71,22 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        User user = authService.login(request.getIndexNumber(), request.getPassword());
-        String identifier = (user.getIndexNumber() != null) ? user.getIndexNumber() : user.getEmail();
+        User user = authService.login(request.getIdentifier(),
+                request.getPassword());
 
-        String token = jwtUtil.generateToken(identifier, user.getRole().name());
+        String tokenSubject = user.getIndexNumber() != null
+                && !user.getIndexNumber().isBlank()
+                        ? user.getIndexNumber()
+                        : user.getEmail();
+
+        String token = jwtUtil.generateToken(tokenSubject,
+                user.getRole().name());
 
         user.setPassword(null);
         user.setOtp(null);
-        return ResponseEntity.ok(new AuthResponse(token, user));
+        user.setPasswordToken(null);
+
+        return ResponseEntity.ok(new AuthResponse(token,
+                user));
     }
 }

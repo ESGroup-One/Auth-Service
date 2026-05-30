@@ -101,7 +101,7 @@ public class AuthService {
 
         userRepository.save(admin);
 
-        String setupLink = "http://localhost:3000/set-password?token=" + token;
+        String setupLink = "http://localhost:5173/set-password/" + token;
         emailService.sendAdminSetupEmail(admin.getEmail(), setupLink);
 
         return "Admin invited successfully";
@@ -119,22 +119,37 @@ public class AuthService {
     }
 
     public User login(String identifier, String password) {
-        User user;
+        if (identifier == null || identifier.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email or index number is required");
+        }
 
-        if (identifier.contains("@")) {
-            user = userRepository.findByEmail(identifier)
+        if (password == null || password.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
+        }
+
+        String value = identifier.trim();
+
+        User user;
+        if (value.contains("@")) {
+            user = userRepository.findByEmail(value)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
         } else {
-            user = userRepository.findByIndexNumber(identifier)
+            if (!value.matches("\\d{11}")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Index number must be exactly 11 digits");
+            }
+
+            user = userRepository.findByIndexNumber(value)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
         }
+
         if (!user.isVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please complete registration first");
         }
-        if (passwordEncoder.matches(password, user.getPassword())) {
-            return user;
-        } else {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+
+        if (user.getPassword() == null || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
+
+        return user;
     }
 }
