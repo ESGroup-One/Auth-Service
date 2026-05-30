@@ -14,6 +14,7 @@ import bt.edu.gcit.authservice.dao.UserRepository;
 import bt.edu.gcit.authservice.dto.StudentRegistryDTO;
 import bt.edu.gcit.authservice.entity.User;
 import bt.edu.gcit.authservice.util.JwtUtil;
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
@@ -151,5 +152,126 @@ public class AuthService {
         }
 
         return user;
+    }
+
+    public String sendForgotPasswordOtp(Map<String, String> request) {
+        User user = findUserForPasswordReset(request);
+
+        if (!user.isVerified()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please complete registration first.");
+        }
+
+        String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
+
+        user.setOtp(otp);
+        user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+        user.setPasswordToken(null);
+        user.setPasswordTokenExpiresAt(null);
+
+        userRepository.save(user);
+        emailService.sendPasswordResetOtpEmail(user.getEmail(), otp);
+
+        return "OTP sent to your registered email.";
+    }
+
+    public String verifyForgotPasswordOtp(String identifier, String otp) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email or index number is required.");
+        }
+
+        if (otp == null || otp.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP is required.");
+        }
+
+        User user = findUserByIdentifier(identifier);
+
+        if (user.getOtp() == null || !user.getOtp().equals(otp)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid OTP.");
+        }
+
+        if (user.getOtpExpiresAt() == null || LocalDateTime.now().isAfter(user.getOtpExpiresAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP has expired.");
+        }
+
+        String resetToken = UUID.randomUUID().toString();
+
+        user.setOtp(null);
+        user.setOtpExpiresAt(null);
+        user.setPasswordToken(resetToken);
+        user.setPasswordTokenExpiresAt(LocalDateTime.now().plusMinutes(15));
+
+        userRepository.save(user);
+
+        return resetToken;
+    }
+
+    public void resetForgotPassword(String token, String newPassword) {
+        if (token == null || token.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reset token is required.");
+        }
+
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required.");
+        }
+
+        validatePassword(newPassword);
+
+        User user = userRepository.findByPasswordToken(token)
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid or expired reset token."));
+
+        if (user.getPasswordTokenExpiresAt() == null || LocalDateTime.now().isAfter(user.getPasswordTokenExpiresAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reset token has expired.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordToken(null);
+        user.setPasswordTokenExpiresAt(null);
+        user.setOtp(null);
+        user.setOtpExpiresAt(null);
+
+        userRepository.save(user);
+    }
+
+    private User findUserForPasswordReset(Map<String, String> request) {
+        String identifier = request.get("identifier");
+
+        if ((identifier == null || identifier.isBlank()) && request.get("email") != null) {
+            identifier = request.get("email");
+        }
+
+        if ((identifier == null || identifier.isBlank()) && request.get("indexNumber") != null) {
+            identifier = request.get("indexNumber");
+        }
+
+        return findUserByIdentifier(identifier);
+    }
+
+    private User findUserByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email or index number is required.");
+        }
+
+        String value = identifier.trim();
+
+        if (value.contains("@")) {
+            return userRepository.findByEmail(value)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+        }
+
+        if (!value.matches("\\d{11}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Index number must be exactly 11 digits.");
+        }
+
+        return userRepository.findByIndexNumber(value)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+    }
+
+    private void validatePassword(String password) {
+        if (!password.matches("^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,12}$")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Password must be 8-12 characters with at least one uppercase letter, number, and special character.");
+        }
     }
 }
