@@ -3,6 +3,7 @@ package bt.edu.gcit.authservice.entity;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -15,6 +16,12 @@ public class User {
 
     @JsonIgnore
     private String otp;
+
+    @JsonIgnore
+    private LocalDateTime otpExpiresAt;
+
+    @JsonIgnore
+    private LocalDateTime passwordTokenExpiresAt;
 
     @Id
     private String id;
